@@ -12,6 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   LineItem,
   ReservationData,
   ProposalData,
@@ -23,10 +30,12 @@ import {
   Loader2,
   X,
   CheckCircle,
+  Users,
 } from "lucide-react";
 
 export default function ConciergeDashboard() {
-  const [reservation, setReservation] = useState<ReservationData | null>(null);
+  const [reservations, setReservations] = useState<ReservationData[]>([]);
+  const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
   const [proposals, setProposals] = useState<ProposalData[]>([]);
   const [items, setItems] = useState<LineItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -38,11 +47,16 @@ export default function ConciergeDashboard() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [editingProposalId, setEditingProposalId] = useState<number | null>(null);
 
-  const fetchReservation = useCallback(async () => {
+  const reservation = reservations.find((r) => r.id === selectedReservationId) || null;
+
+  const fetchReservations = useCallback(async () => {
     const res = await fetch("/api/reservations");
     const data = await res.json();
-    if (data.length > 0) setReservation(data[0]);
-  }, []);
+    setReservations(data);
+    if (data.length > 0 && !selectedReservationId) {
+      setSelectedReservationId(data[0].id);
+    }
+  }, [selectedReservationId]);
 
   const fetchProposals = useCallback(async () => {
     const res = await fetch("/api/proposals");
@@ -54,24 +68,21 @@ export default function ConciergeDashboard() {
     try {
       const res = await fetch(`/api/proposals/${proposalId}`);
       const proposal = await res.json();
-      
-      if (proposal.items && proposal.items.length > 0) {
-        setItems(proposal.items);
-        setNotes(proposal.notes || "");
-        setEditingProposalId(proposalId);
-        setSuccessMessage(`Editing draft proposal #${proposalId}`);
-        setTimeout(() => setSuccessMessage(null), 3000);
-      }
+      setItems(proposal.items || []);
+      setNotes(proposal.notes || "");
+      setEditingProposalId(proposalId);
+      setSuccessMessage(`Editing draft proposal #${proposalId}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Error loading draft:", error);
     }
   }, []);
 
   useEffect(() => {
-    Promise.all([fetchReservation(), fetchProposals()]).finally(() =>
+    Promise.all([fetchReservations(), fetchProposals()]).finally(() =>
       setLoading(false)
     );
-  }, [fetchReservation, fetchProposals]);
+  }, [fetchReservations, fetchProposals]);
 
   const handleAddItem = (item: LineItem) => {
     setItems((prev) => [...prev, item]);
@@ -90,56 +101,153 @@ export default function ConciergeDashboard() {
     if (!reservation || items.length === 0) return;
     setSaving(true);
 
-    try {
-      // Create or update the proposal
-      const url = editingProposalId 
-        ? `/api/proposals/${editingProposalId}` 
-        : "/api/proposals";
-      const method = editingProposalId ? "PATCH" : "POST";
-      
-      const createRes = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reservationId: reservation.id,
-          items,
-          notes: notes || null,
-          status: "draft",
-        }),
-      });
-      const proposal = await createRes.json();
+    // Capture values before clearing the form
+    const capturedItems = [...items];
+    const capturedNotes = notes;
+    const capturedEditingId = editingProposalId;
 
-      // Send the proposal
-      setSending(true);
-      const sendRes = await fetch(`/api/proposals/${proposal.id}/send`, {
-        method: "POST",
-      });
-      const sentData = await sendRes.json();
+    // Clear form immediately for instant feedback
+    setItems([]);
+    setNotes("");
+    setSelectedCategory(null);
+    setPreviewOpen(false);
+    setEditingProposalId(null);
+    setSuccessMessage(`Proposal sent to ${reservation.memberEmail}!`);
 
-      console.log("📧 Proposal sent:", sentData);
-
-      setItems([]);
-      setNotes("");
-      setSelectedCategory(null);
-      setPreviewOpen(false);
-      setEditingProposalId(null);
-      setSuccessMessage(
-        `Proposal #${proposal.id} sent to ${reservation.memberEmail}!`
+    if (capturedEditingId !== null) {
+      // Editing existing draft: update it in-place, don't add a new entry
+      const originalProposal = proposals.find(p => p.id === capturedEditingId);
+      setProposals(prev =>
+        prev.map(p =>
+          p.id === capturedEditingId
+            ? { ...p, status: "sent" as const, sentAt: new Date().toISOString() }
+            : p
+        )
       );
-      setTimeout(() => setSuccessMessage(null), 5000);
 
-      await fetchProposals();
-    } catch (error) {
-      console.error("Error creating/sending proposal:", error);
-    } finally {
-      setSaving(false);
-      setSending(false);
+      try {
+        const patchRes = await fetch(`/api/proposals/${capturedEditingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reservationId: reservation.id,
+            items: capturedItems,
+            notes: capturedNotes || null,
+          }),
+        });
+        const updatedProposal = await patchRes.json();
+
+        setSending(true);
+        const sendRes = await fetch(`/api/proposals/${capturedEditingId}/send`, {
+          method: "POST",
+        });
+        const sentData = await sendRes.json();
+        console.log("📧 Proposal sent:", sentData);
+
+        setProposals(prev =>
+          prev.map(p =>
+            p.id === capturedEditingId
+              ? { ...updatedProposal, status: "sent" as const, sentAt: sentData.sentAt ?? new Date().toISOString() }
+              : p
+          )
+        );
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } catch (error) {
+        console.error("Error editing/sending proposal:", error);
+        if (originalProposal) {
+          setProposals(prev => prev.map(p => p.id === capturedEditingId ? originalProposal : p));
+        }
+        setSuccessMessage("Failed to send proposal. Please try again.");
+        setTimeout(() => setSuccessMessage(null), 5000);
+      }
+    } else {
+      // New proposal: add optimistic entry then reconcile with real data
+      const tempId = Date.now();
+      const optimisticProposal: ProposalData = {
+        id: tempId,
+        reservationId: reservation.id,
+        reservation,
+        status: "sent",
+        notes: capturedNotes || null,
+        createdAt: new Date().toISOString(),
+        sentAt: new Date().toISOString(),
+        items: capturedItems.map((item, index) => ({
+          id: tempId + index,
+          proposalId: tempId,
+          ...item,
+        })),
+      };
+
+      setProposals(prev => [optimisticProposal, ...prev]);
+
+      try {
+        const createRes = await fetch("/api/proposals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reservationId: reservation.id,
+            items: capturedItems,
+            notes: capturedNotes || null,
+          }),
+        });
+        const proposal = await createRes.json();
+
+        setSending(true);
+        const sendRes = await fetch(`/api/proposals/${proposal.id}/send`, {
+          method: "POST",
+        });
+        const sentData = await sendRes.json();
+        console.log("📧 Proposal sent:", sentData);
+
+        setProposals(prev =>
+          prev.map(p =>
+            p.id === tempId
+              ? { ...proposal, status: "sent" as const, sentAt: sentData.sentAt ?? new Date().toISOString() }
+              : p
+          )
+        );
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } catch (error) {
+        console.error("Error creating/sending proposal:", error);
+        setProposals(prev => prev.filter(p => p.id !== tempId));
+        setSuccessMessage("Failed to send proposal. Please try again.");
+        setTimeout(() => setSuccessMessage(null), 5000);
+      }
     }
+
+    setSaving(false);
+    setSending(false);
   };
 
   const handleSaveDraft = async () => {
     if (!reservation || items.length === 0) return;
     setSaving(true);
+
+    // Optimistic update - create a temporary draft proposal
+    const tempId = Date.now();
+    const optimisticProposal: ProposalData = {
+      id: tempId,
+      reservationId: reservation.id,
+      reservation,
+      status: "draft",
+      notes: notes || null,
+      createdAt: new Date().toISOString(),
+      sentAt: null,
+      items: items.map((item, index) => ({
+        id: tempId + index,
+        proposalId: tempId,
+        ...item,
+      })),
+    };
+
+    // Immediately add to proposals list
+    setProposals(prev => [optimisticProposal, ...prev]);
+    
+    // Clear form immediately for instant feedback
+    setItems([]);
+    setNotes("");
+    setSelectedCategory(null);
+    setSuccessMessage(`Draft saved!`);
 
     try {
       const res = await fetch("/api/proposals", {
@@ -153,15 +261,19 @@ export default function ConciergeDashboard() {
       });
       const proposal = await res.json();
 
-      setItems([]);
-      setNotes("");
-      setSelectedCategory(null);
-      setSuccessMessage(`Draft proposal #${proposal.id} saved!`);
-      setTimeout(() => setSuccessMessage(null), 5000);
-
-      await fetchProposals();
+      // Replace optimistic proposal with real one
+      setProposals(prev => prev.map(p => 
+        p.id === tempId ? proposal : p
+      ));
+      
+      setSuccessMessage(`Draft saved! Proposal #${proposal.id}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Error saving draft:", error);
+      // Remove optimistic proposal on error
+      setProposals(prev => prev.filter(p => p.id !== tempId));
+      setSuccessMessage("Failed to save draft. Please try again.");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } finally {
       setSaving(false);
     }
@@ -190,6 +302,31 @@ export default function ConciergeDashboard() {
               Concierge Dashboard
             </p>
           </div>
+          {reservations.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <Select
+                value={selectedReservationId?.toString() || ""}
+                onValueChange={(value) => setSelectedReservationId(parseInt(value))}
+              >
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Select a member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reservations.map((res) => (
+                    <SelectItem key={res.id} value={res.id.toString()}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{res.memberName}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {res.destination} • {new Date(res.arrivalDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </header>
 

@@ -66,23 +66,44 @@ sqlite.exec(`
 const insertMember = sqlite.prepare(
   "INSERT INTO members (name, email) VALUES (?, ?)"
 );
-const memberResult = insertMember.run("James Whitfield", "james.whitfield@example.com");
-const memberId = memberResult.lastInsertRowid;
+function seed() {
+  // Create members
+  const member1 = insertMember.run("James Whitfield", "james.whitfield@example.com");
+  const member2 = insertMember.run("Sarah Chen", "sarah.chen@example.com");
+  const member3 = insertMember.run("Robert Johnson", "robert.johnson@example.com");
 
-// Seed reservation
-const insertReservation = sqlite.prepare(
-  "INSERT INTO reservations (member_id, destination, villa, arrival_date, departure_date) VALUES (?, ?, ?, ?, ?)"
-);
-insertReservation.run(
-  memberId,
-  "Punta Mita, Mexico",
-  "Villa Punta Mita",
-  "2025-03-15",
-  "2025-03-22"
-);
+  // Create reservations
+  const insertReservation = sqlite.prepare(
+    "INSERT INTO reservations (member_id, destination, villa, arrival_date, departure_date) VALUES (?, ?, ?, ?, ?)"
+  );
+  insertReservation.run(
+    member1.lastInsertRowid,
+    "Mexico",
+    "Villa Punta Mita",
+    "2025-03-15",
+    "2025-03-22"
+  );
+  insertReservation.run(
+    member2.lastInsertRowid,
+    "Italy",
+    "Villa Tuscany",
+    "2025-04-10",
+    "2025-04-17"
+  );
+  insertReservation.run(
+    member3.lastInsertRowid,
+    "Caribbean",
+    "Villa St. Barts",
+    "2025-05-20",
+    "2025-05-27"
+  );
 
-console.log("✅ Database seeded successfully!");
-console.log(`   Member: James Whitfield (ID: ${memberId})`);
-console.log("   Reservation: Villa Punta Mita, Mexico — Mar 15–22, 2025");
-
+  console.log("✅ Database seeded successfully!");
+  console.log(`   Members created: James Whitfield, Sarah Chen, Robert Johnson`);
+  console.log(`   Reservations created:`);
+  console.log(`   - James Whitfield: Villa Punta Mita, Mexico`);
+  console.log(`   - Sarah Chen: Villa Tuscany, Italy`);
+  console.log(`   - Robert Johnson: Villa St. Barts, Caribbean`);
+}
+seed();
 sqlite.close();

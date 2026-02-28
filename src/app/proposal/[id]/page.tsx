@@ -74,8 +74,9 @@ export default function ProposalPage() {
   const params = useParams();
   const [proposal, setProposal] = useState<ProposalData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProposal = useCallback(async () => {
@@ -95,27 +96,59 @@ export default function ProposalPage() {
     fetchProposal();
   }, [fetchProposal]);
 
-  const handleStatusUpdate = async (newStatus: "approved" | "paid") => {
+  const handleApprove = async () => {
     if (!proposal) return;
-    setUpdating(true);
+    
+    // Optimistic update - immediately show as approved
+    setOptimisticStatus("approved");
+    setApproving(true);
 
     try {
       const res = await fetch(`/api/proposals/${proposal.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: "approved" }),
       });
+      
+      if (!res.ok) throw new Error("Failed to approve");
+      
       const updated = await res.json();
-
       setProposal((prev) => (prev ? { ...prev, status: updated.status } : prev));
-
-      if (newStatus === "paid") {
-        setShowConfirmation(true);
-      }
-    } catch {
-      console.error("Error updating proposal status");
+      setOptimisticStatus(null); // Clear optimistic state on success
+    } catch (error) {
+      console.error("Error approving proposal:", error);
+      setOptimisticStatus(null); // Revert on error
+      // Could show an error toast here
     } finally {
-      setUpdating(false);
+      setApproving(false);
+    }
+  };
+
+  const handlePay = async () => {
+    if (!proposal) return;
+    
+    // Optimistic update - immediately show as paid
+    setOptimisticStatus("paid");
+    setPaying(true);
+
+    try {
+      const res = await fetch(`/api/proposals/${proposal.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "paid" }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to process payment");
+      
+      const updated = await res.json();
+      setProposal((prev) => (prev ? { ...prev, status: updated.status } : prev));
+      setOptimisticStatus(null); // Clear optimistic state on success
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      setOptimisticStatus(null); // Revert on error
+      // Could show an error toast here
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -140,55 +173,12 @@ export default function ProposalPage() {
     );
   }
 
-  // Confirmation Screen
-  if (showConfirmation) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900 flex items-center justify-center px-4">
-        <div className="text-center max-w-md animate-in fade-in zoom-in duration-700">
-          <div className="w-20 h-20 bg-amber-400/20 rounded-full flex items-center justify-center mx-auto mb-8">
-            <Sparkles className="w-10 h-10 text-amber-400" />
-          </div>
-          <h1 className="text-4xl font-light text-white mb-4 tracking-wide">
-            You&apos;re All Set
-          </h1>
-          <p className="text-stone-400 text-lg font-light leading-relaxed mb-2">
-            Your itinerary for{" "}
-            <span className="text-white">
-              {proposal.reservation?.destination}
-            </span>{" "}
-            has been confirmed and locked in.
-          </p>
-          <p className="text-stone-500 text-sm mb-8">
-            {proposal.reservation?.villa} ·{" "}
-            {formatDate(proposal.reservation?.arrivalDate || "")} –{" "}
-            {formatDate(proposal.reservation?.departureDate || "")}
-          </p>
-          <Separator className="bg-stone-700 mb-8" />
-          <div className="bg-stone-800/50 rounded-xl p-6 border border-stone-700">
-            <p className="text-stone-400 text-sm mb-1">Total Confirmed</p>
-            <p className="text-4xl font-light text-amber-400">
-              $
-              {(proposal.items || [])
-                .reduce((sum, item) => sum + item.price, 0)
-                .toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </p>
-            <p className="text-stone-500 text-xs mt-2">
-              {(proposal.items || []).length} curated experiences
-            </p>
-          </div>
-          <p className="text-stone-600 text-xs mt-8">
-            Your concierge team will have everything ready for your arrival.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const total = (proposal.items || []).reduce(
-    (sum, item) => sum + item.price,
+    (sum: number, item: ProposalItemData) => sum + item.price,
     0
   );
   const groupedItems = groupItemsByDate(proposal.items || []);
+  const currentStatus = optimisticStatus ?? proposal.status;
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -226,22 +216,23 @@ export default function ProposalPage() {
       </div>
 
       {/* Status Bar */}
-      {proposal.status !== "draft" && (
+      {currentStatus !== "draft" && (
         <div
-          className={`py-3 px-6 text-sm font-medium flex items-center justify-between ${
-            proposal.status === "paid"
+          key={currentStatus}
+          className={`animate-in slide-in-from-top-2 fade-in duration-500 py-3 px-6 text-sm font-medium flex items-center justify-between ${
+            currentStatus === "paid"
               ? "bg-amber-50 text-amber-800"
-              : proposal.status === "approved"
+              : currentStatus === "approved"
               ? "bg-green-50 text-green-800"
               : "bg-blue-50 text-blue-800"
           }`}
         >
           <span>
-            {proposal.status === "paid" && "✓ Itinerary Confirmed & Locked In"}
-            {proposal.status === "approved" && "✓ Itinerary Approved — Ready for Payment"}
-            {proposal.status === "sent" && "Awaiting Your Approval"}
+            {currentStatus === "paid" && "✓ Itinerary Confirmed & Locked In"}
+            {currentStatus === "approved" && "✓ Itinerary Approved — Ready for Payment"}
+            {currentStatus === "sent" && "Awaiting Your Approval"}
           </span>
-          {proposal.status === "paid" && (
+          {currentStatus === "paid" && (
             <ProposalPDFExport proposal={proposal} />
           )}
         </div>
@@ -249,7 +240,7 @@ export default function ProposalPage() {
 
       {/* Concierge Notes */}
       {proposal.notes && (
-        <div className="max-w-3xl mx-auto px-6 mt-10">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto px-6 mt-10">
           <div className="bg-white rounded-xl p-6 border border-stone-200 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
               A Note from Your Concierge
@@ -323,45 +314,76 @@ export default function ProposalPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-10 text-center space-y-4">
-          {proposal.status === "sent" && (
-            <Button
-              onClick={() => handleStatusUpdate("approved")}
-              disabled={updating}
-              className="bg-stone-900 hover:bg-stone-800 text-white px-10 py-6 text-base rounded-full shadow-lg hover:shadow-xl transition-all"
-              size="lg"
-            >
-              {updating ? (
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              ) : (
-                <CheckCircle className="w-5 h-5 mr-2" />
-              )}
-              Approve Itinerary
-            </Button>
+        <div key={currentStatus} className="mt-10 text-center space-y-4">
+          {currentStatus === "sent" && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Button
+                onClick={handleApprove}
+                disabled={approving || paying}
+                className="bg-stone-900 hover:bg-stone-800 text-white px-10 py-6 text-base rounded-full shadow-lg hover:shadow-xl transition-all"
+                size="lg"
+              >
+                {approving ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                )}
+                Approve Itinerary
+              </Button>
+            </div>
           )}
 
-          {proposal.status === "approved" && (
-            <Button
-              onClick={() => handleStatusUpdate("paid")}
-              disabled={updating}
-              className="bg-amber-600 hover:bg-amber-700 text-white px-10 py-6 text-base rounded-full shadow-lg hover:shadow-xl transition-all"
-              size="lg"
-            >
-              {updating ? (
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              ) : (
-                <CreditCard className="w-5 h-5 mr-2" />
-              )}
-              Pay & Lock In
-            </Button>
+          {currentStatus === "approved" && (
+            <div className="animate-in fade-in slide-in-from-bottom-6 duration-500 flex flex-col items-center gap-5">
+              <div className="animate-in zoom-in-95 fade-in duration-300 flex items-center gap-2 text-green-700 bg-green-50 rounded-full px-5 py-2">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Itinerary Approved</span>
+              </div>
+              <Button
+                onClick={handlePay}
+                disabled={paying || approving}
+                className="bg-amber-600 hover:bg-amber-700 text-white px-10 py-6 text-base rounded-full shadow-lg hover:shadow-xl transition-all"
+                size="lg"
+              >
+                {paying ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <CreditCard className="w-5 h-5 mr-2" />
+                )}
+                Pay & Lock In
+              </Button>
+            </div>
           )}
 
-          {proposal.status === "paid" && (
-            <div className="flex items-center justify-center gap-2 text-amber-700">
-              <Sparkles className="w-5 h-5" />
-              <span className="text-lg font-medium">
-                Itinerary Confirmed — See You Soon!
-              </span>
+          {currentStatus === "paid" && (
+            <div className="animate-in fade-in zoom-in-95 duration-700 flex flex-col items-center gap-8 py-8">
+              <div className="relative flex items-center justify-center">
+                <div className="absolute w-32 h-32 rounded-full bg-amber-100 animate-ping opacity-20" />
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-xl shadow-amber-200/60">
+                  <CheckCircle className="w-10 h-10 text-white" />
+                </div>
+              </div>
+              <div
+                className="animate-in slide-in-from-bottom-4 fade-in duration-500 text-center space-y-3"
+                style={{ animationDelay: "150ms" }}
+              >
+                <h3 className="text-3xl font-light text-stone-800 tracking-wide">
+                  Itinerary Locked In
+                </h3>
+                <p className="text-stone-500 font-light">
+                  Your experience has been confirmed. See you soon!
+                </p>
+              </div>
+              <div
+                className="animate-in fade-in duration-700 flex items-center gap-3"
+                style={{ animationDelay: "300ms" }}
+              >
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span className="text-xs text-stone-400 uppercase tracking-[0.2em]">
+                  Exclusive Resorts
+                </span>
+                <Sparkles className="w-4 h-4 text-amber-400" />
+              </div>
             </div>
           )}
         </div>

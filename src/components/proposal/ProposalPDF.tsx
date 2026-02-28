@@ -9,7 +9,7 @@ import {
   StyleSheet,
   PDFDownloadLink,
 } from "@react-pdf/renderer";
-import { ProposalData, CATEGORIES } from "@/lib/constants";
+import { ProposalData } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
 
@@ -158,10 +158,6 @@ function formatItemTime(dt: string) {
   });
 }
 
-function getCategoryIcon(category: string) {
-  return CATEGORIES.find((c) => c.name === category)?.icon || "📋";
-}
-
 function groupItemsByDate(items: any[]) {
   const groups: Record<string, any[]> = {};
   const sorted = [...items].sort(
@@ -242,7 +238,7 @@ const ProposalDocument = ({ proposal }: { proposal: ProposalData }) => {
                 <View key={itemIndex} style={styles.itemContainer}>
                   <View style={styles.itemHeader}>
                     <Text style={styles.itemTitle}>
-                      {getCategoryIcon(item.category)} {item.title}
+                      {item.title}
                     </Text>
                     <Text style={styles.itemPrice}>
                       ${item.price.toLocaleString()}
