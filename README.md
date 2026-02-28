@@ -61,7 +61,7 @@ Open [http://localhost:3000](http://localhost:3000) — the **Concierge Dashboar
 
 ## Assumptions
 
-- **Single member/reservation**: The seed script creates one member (James Whitfield) with one reservation (Villa Punta Mita, Mar 15–22). The UI is designed around this scenario.
+- **Multiple members/reservations**: The seed script creates three members (James Whitfield, Sarah Chen, Robert Johnson) with one reservation each. The dashboard defaults to James Whitfield's reservation (Villa Punta Mita, Mar 15–22).
 - **No real email**: Sending a proposal logs to `sent_emails` table and `console.log`. A success banner appears in the UI.
 - **No real payment**: The "Pay & Lock In" button simply updates the status to `paid`.
 - **Date handling**: Dates are stored as ISO strings in SQLite for simplicity.
@@ -73,19 +73,22 @@ Open [http://localhost:3000](http://localhost:3000) — the **Concierge Dashboar
 - ✅ **Drag-and-drop reordering**: Itinerary items can be reordered by dragging the grip handle on the left of each item.
 - ✅ **Mobile-responsive dashboard**: The concierge dashboard is now fully responsive with optimized layouts for mobile devices.
 - ✅ **PDF export**: Once a proposal is paid, members can download a beautifully formatted PDF of their itinerary.
+- ✅ **Timeline view**: The member view displays a beautiful day-by-day timeline of the itinerary.
+- ✅ **Multiple members/reservations**: Support for multiple members with a dropdown selector in the concierge dashboard.
+- ✅ **Optimistic UI updates**: Status changes and proposal creation feel instant with immediate UI updates while API calls happen in the background.
 
 ## What I Would Improve Given More Time
 
 - **Authentication**: Add concierge login and member auth via magic links
-- **Multiple members/reservations**: Support a dropdown to switch between members
 - **Real email integration** (SendGrid, Resend, etc.)
 - **Image uploads** for experiences (hero images per category)
 - **E2E tests** with Playwright for the full create → send → approve → pay flow
-- **Optimistic UI updates** with React Query or SWR for instant status changes
 - **Rich text editor** for proposal notes with formatting options
 - **Activity provider integration** for real-time pricing and availability
 - **Multi-language support** for international members
 - **Proposal templates** to quickly create common itinerary patterns
+- **Offline support** with service workers for reliability
+- **Advanced analytics** to track proposal conversion rates
 
 ## What I Found Most Interesting
 
