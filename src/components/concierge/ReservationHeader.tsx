@@ -26,31 +26,40 @@ export default function ReservationHeader({
   const nights = getNights(reservation.arrivalDate, reservation.departureDate);
 
   return (
-    <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl p-6 mb-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">
+          <p className="text-slate-400 text-xs sm:text-sm font-medium uppercase tracking-wider">
             Upcoming Trip
           </p>
-          <h2 className="text-2xl font-bold mt-1">{reservation.memberName}</h2>
+          <h2 className="text-xl sm:text-2xl font-bold mt-1">{reservation.memberName}</h2>
         </div>
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm">
           <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-amber-400" />
-            <span>{reservation.destination}</span>
+            <MapPin className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span className="truncate">{reservation.destination}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Home className="w-4 h-4 text-amber-400" />
-            <span>{reservation.villa}</span>
+            <Home className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span className="truncate">{reservation.villa}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-amber-400" />
-            <span>
+            <Calendar className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span className="hidden sm:inline">
               {formatDate(reservation.arrivalDate)} –{" "}
               {formatDate(reservation.departureDate)}
             </span>
+            <span className="sm:hidden">
+              {new Date(reservation.arrivalDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })} - {new Date(reservation.departureDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
           </div>
-          <div className="bg-amber-400/20 text-amber-300 px-3 py-1 rounded-full text-xs font-semibold">
+          <div className="bg-amber-400/20 text-amber-300 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold">
             {nights} nights
           </div>
         </div>

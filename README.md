@@ -67,18 +67,25 @@ Open [http://localhost:3000](http://localhost:3000) — the **Concierge Dashboar
 - **Date handling**: Dates are stored as ISO strings in SQLite for simplicity.
 - **SQLite file**: The database (`sqlite.db`) is created at the project root and is gitignored.
 
+## Stretch Goals Implemented
+
+- ✅ **Edit existing drafts**: Draft proposals can now be edited before sending. Click the "Edit" button on any draft proposal in the list.
+- ✅ **Drag-and-drop reordering**: Itinerary items can be reordered by dragging the grip handle on the left of each item.
+- ✅ **Mobile-responsive dashboard**: The concierge dashboard is now fully responsive with optimized layouts for mobile devices.
+- ✅ **PDF export**: Once a proposal is paid, members can download a beautifully formatted PDF of their itinerary.
+
 ## What I Would Improve Given More Time
 
 - **Authentication**: Add concierge login and member auth via magic links
 - **Multiple members/reservations**: Support a dropdown to switch between members
-- **Drag-and-drop reordering** of itinerary items
-- **Edit existing drafts** before sending (currently you create fresh each time)
 - **Real email integration** (SendGrid, Resend, etc.)
 - **Image uploads** for experiences (hero images per category)
-- **Mobile-responsive polish** for the concierge dashboard (member view is responsive)
 - **E2E tests** with Playwright for the full create → send → approve → pay flow
 - **Optimistic UI updates** with React Query or SWR for instant status changes
-- **PDF export** of the finalized itinerary
+- **Rich text editor** for proposal notes with formatting options
+- **Activity provider integration** for real-time pricing and availability
+- **Multi-language support** for international members
+- **Proposal templates** to quickly create common itinerary patterns
 
 ## What I Found Most Interesting
 

@@ -3,7 +3,8 @@
 import { ProposalData } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { FileText, Send, CheckCircle, CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Send, CheckCircle, CreditCard, Pencil } from "lucide-react";
 
 const statusConfig = {
   draft: {
@@ -45,9 +46,10 @@ function getStatusColor(status: string) {
 
 interface ProposalsListProps {
   proposals: ProposalData[];
+  onEditDraft?: (proposalId: number) => void;
 }
 
-export default function ProposalsList({ proposals }: ProposalsListProps) {
+export default function ProposalsList({ proposals, onEditDraft }: ProposalsListProps) {
   if (proposals.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -84,6 +86,17 @@ export default function ProposalsList({ proposals }: ProposalsListProps) {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {proposal.status === "draft" && onEditDraft && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditDraft(proposal.id)}
+                    className="text-xs"
+                  >
+                    <Pencil className="w-3 h-3 mr-1" />
+                    Edit
+                  </Button>
+                )}
                 {proposal.status === "sent" && (
                   <a
                     href={`/proposal/${proposal.id}`}

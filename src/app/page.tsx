@@ -36,6 +36,7 @@ export default function ConciergeDashboard() {
   const [sending, setSending] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [editingProposalId, setEditingProposalId] = useState<number | null>(null);
 
   const fetchReservation = useCallback(async () => {
     const res = await fetch("/api/reservations");
@@ -47,6 +48,23 @@ export default function ConciergeDashboard() {
     const res = await fetch("/api/proposals");
     const data = await res.json();
     setProposals(data);
+  }, []);
+
+  const handleEditDraft = useCallback(async (proposalId: number) => {
+    try {
+      const res = await fetch(`/api/proposals/${proposalId}`);
+      const proposal = await res.json();
+      
+      if (proposal.items && proposal.items.length > 0) {
+        setItems(proposal.items);
+        setNotes(proposal.notes || "");
+        setEditingProposalId(proposalId);
+        setSuccessMessage(`Editing draft proposal #${proposalId}`);
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } catch (error) {
+      console.error("Error loading draft:", error);
+    }
   }, []);
 
   useEffect(() => {
@@ -64,19 +82,29 @@ export default function ConciergeDashboard() {
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleReorderItems = (newItems: LineItem[]) => {
+    setItems(newItems);
+  };
+
   const handleCreateAndSend = async () => {
     if (!reservation || items.length === 0) return;
     setSaving(true);
 
     try {
-      // Create the proposal
-      const createRes = await fetch("/api/proposals", {
-        method: "POST",
+      // Create or update the proposal
+      const url = editingProposalId 
+        ? `/api/proposals/${editingProposalId}` 
+        : "/api/proposals";
+      const method = editingProposalId ? "PATCH" : "POST";
+      
+      const createRes = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           reservationId: reservation.id,
           items,
           notes: notes || null,
+          status: "draft",
         }),
       });
       const proposal = await createRes.json();
@@ -94,6 +122,7 @@ export default function ConciergeDashboard() {
       setNotes("");
       setSelectedCategory(null);
       setPreviewOpen(false);
+      setEditingProposalId(null);
       setSuccessMessage(
         `Proposal #${proposal.id} sent to ${reservation.memberEmail}!`
       );
@@ -151,10 +180,10 @@ export default function ConciergeDashboard() {
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Top Bar */}
-      <header className="bg-white border-b px-6 py-4">
+      <header className="bg-white border-b px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight">
               Exclusive Resorts
             </h1>
             <p className="text-xs text-muted-foreground">
@@ -164,15 +193,15 @@ export default function ConciergeDashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {/* Success Banner */}
         {successMessage && (
           <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2 animate-in fade-in">
-            <CheckCircle className="w-4 h-4 text-green-600" />
+            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
             <span className="text-sm text-green-800">{successMessage}</span>
             <button
               onClick={() => setSuccessMessage(null)}
-              className="ml-auto"
+              className="ml-auto flex-shrink-0"
             >
               <X className="w-4 h-4 text-green-600" />
             </button>
@@ -182,7 +211,7 @@ export default function ConciergeDashboard() {
         {/* Reservation Header */}
         {reservation && <ReservationHeader reservation={reservation} />}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           {/* Left: Builder */}
           <div className="lg:col-span-2 space-y-6">
             {/* Category Selection */}
@@ -229,7 +258,7 @@ export default function ConciergeDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <LineItemsList items={items} onRemove={handleRemoveItem} />
+                <LineItemsList items={items} onRemove={handleRemoveItem} onReorder={handleReorderItems} />
               </CardContent>
             </Card>
 
@@ -362,7 +391,7 @@ export default function ConciergeDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ProposalsList proposals={proposals} />
+                <ProposalsList proposals={proposals} onEditDraft={handleEditDraft} />
               </CardContent>
             </Card>
           </div>

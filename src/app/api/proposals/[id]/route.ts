@@ -70,12 +70,29 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { status, notes } = body;
+    const { status, notes, items } = body;
 
     const validStatuses = ["draft", "sent", "approved", "paid"];
     if (status && !validStatuses.includes(status)) {
       return NextResponse.json(
         { error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // Check if proposal exists and is still a draft
+    const [existingProposal] = await db
+      .select()
+      .from(proposals)
+      .where(eq(proposals.id, proposalId));
+
+    if (!existingProposal) {
+      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+    }
+
+    if (items && existingProposal.status !== "draft") {
+      return NextResponse.json(
+        { error: "Cannot update items for non-draft proposals" },
         { status: 400 }
       );
     }
@@ -90,8 +107,34 @@ export async function PATCH(
       .where(eq(proposals.id, proposalId))
       .returning();
 
-    if (!updated) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+    // If items are provided, update them (delete old ones and insert new ones)
+    if (items && items.length > 0) {
+      // Delete existing items
+      await db
+        .delete(proposalItems)
+        .where(eq(proposalItems.proposalId, proposalId));
+
+      // Insert new items
+      await db
+        .insert(proposalItems)
+        .values(
+          items.map(
+            (item: {
+              category: string;
+              title: string;
+              description?: string;
+              scheduledAt: string;
+              price: number;
+            }) => ({
+              proposalId: proposalId,
+              category: item.category,
+              title: item.title,
+              description: item.description || null,
+              scheduledAt: item.scheduledAt,
+              price: item.price,
+            })
+          )
+        );
     }
 
     return NextResponse.json(updated);

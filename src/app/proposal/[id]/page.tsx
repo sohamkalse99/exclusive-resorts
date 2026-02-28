@@ -15,6 +15,15 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const ProposalPDFExport = dynamic(
+  () => import("@/components/proposal/ProposalPDF"),
+  {
+    ssr: false,
+    loading: () => <Button variant="outline" size="sm" disabled>Loading PDF...</Button>,
+  }
+);
 
 function getCategoryIcon(category: string) {
   return CATEGORIES.find((c) => c.name === category)?.icon || "📋";
@@ -219,7 +228,7 @@ export default function ProposalPage() {
       {/* Status Bar */}
       {proposal.status !== "draft" && (
         <div
-          className={`text-center py-3 text-sm font-medium ${
+          className={`py-3 px-6 text-sm font-medium flex items-center justify-between ${
             proposal.status === "paid"
               ? "bg-amber-50 text-amber-800"
               : proposal.status === "approved"
@@ -227,9 +236,14 @@ export default function ProposalPage() {
               : "bg-blue-50 text-blue-800"
           }`}
         >
-          {proposal.status === "paid" && "✓ Itinerary Confirmed & Locked In"}
-          {proposal.status === "approved" && "✓ Itinerary Approved — Ready for Payment"}
-          {proposal.status === "sent" && "Awaiting Your Approval"}
+          <span>
+            {proposal.status === "paid" && "✓ Itinerary Confirmed & Locked In"}
+            {proposal.status === "approved" && "✓ Itinerary Approved — Ready for Payment"}
+            {proposal.status === "sent" && "Awaiting Your Approval"}
+          </span>
+          {proposal.status === "paid" && (
+            <ProposalPDFExport proposal={proposal} />
+          )}
         </div>
       )}
 
