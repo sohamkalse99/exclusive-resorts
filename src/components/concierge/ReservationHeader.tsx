@@ -26,7 +26,7 @@ export default function ReservationHeader({
   const nights = getNights(reservation.arrivalDate, reservation.departureDate);
 
   return (
-    <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+    <div data-testid="reservation-header" className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <p className="text-slate-400 text-xs sm:text-sm font-medium uppercase tracking-wider">

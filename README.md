@@ -117,3 +117,277 @@ src/
     constants.ts                     # Types and category data
     utils.ts                         # Utility functions
 ```
+### API Results
+
+GET: http://localhost:3000/api/reservations/
+
+```
+[
+    {
+        "id": 1,
+        "memberId": 1,
+        "destination": "Mexico",
+        "villa": "Villa Punta Mita",
+        "arrivalDate": "2025-03-15",
+        "departureDate": "2025-03-22",
+        "memberName": "James Whitfield",
+        "memberEmail": "james.whitfield@example.com"
+    },
+    {
+        "id": 2,
+        "memberId": 2,
+        "destination": "Italy",
+        "villa": "Villa Tuscany",
+        "arrivalDate": "2025-04-10",
+        "departureDate": "2025-04-17",
+        "memberName": "Sarah Chen",
+        "memberEmail": "sarah.chen@example.com"
+    },
+    {
+        "id": 3,
+        "memberId": 3,
+        "destination": "Caribbean",
+        "villa": "Villa St. Barts",
+        "arrivalDate": "2025-05-20",
+        "departureDate": "2025-05-27",
+        "memberName": "Robert Johnson",
+        "memberEmail": "robert.johnson@example.com"
+    }
+]
+```
+
+GET: http://localhost:3000/api/proposals
+```
+[
+    {
+        "id": 4,
+        "reservationId": 2,
+        "status": "paid",
+        "notes": "Sunset Cocktails and Private Car",
+        "createdAt": "2026-02-28T23:29:07.720Z",
+        "sentAt": "2026-02-28T23:29:21.376Z"
+    },
+    {
+        "id": 3,
+        "reservationId": 1,
+        "status": "paid",
+        "notes": "Yoga and Cultural Tour",
+        "createdAt": "2026-02-28T22:57:57.300Z",
+        "sentAt": "2026-02-28T22:57:57.313Z"
+    },
+    {
+        "id": 2,
+        "reservationId": 1,
+        "status": "paid",
+        "notes": "Surf Activity",
+        "createdAt": "2026-02-28T22:55:30.853Z",
+        "sentAt": "2026-02-28T22:55:34.769Z"
+    },
+    {
+        "id": 1,
+        "reservationId": 1,
+        "status": "paid",
+        "notes": "Premium Restaurant Booked on 1st day",
+        "createdAt": "2026-02-28T22:54:11.990Z",
+        "sentAt": "2026-02-28T22:54:19.752Z"
+    }
+]
+```
+GET: http://localhost:3000/api/proposals/4
+```
+{
+    "id": 4,
+    "reservationId": 2,
+    "status": "paid",
+    "notes": "Sunset Cocktails and Private Car",
+    "createdAt": "2026-02-28T23:29:07.720Z",
+    "sentAt": "2026-02-28T23:29:21.376Z",
+    "items": [
+        {
+            "id": 9,
+            "proposalId": 4,
+            "category": "Experiences",
+            "title": "Sunset Cocktails",
+            "description": null,
+            "scheduledAt": "2025-04-10T16:27",
+            "price": 170
+        },
+        {
+            "id": 10,
+            "proposalId": 4,
+            "category": "Transport",
+            "title": "Private Car",
+            "description": null,
+            "scheduledAt": "2025-04-11T18:30",
+            "price": 300
+        }
+    ],
+    "reservation": {
+        "id": 2,
+        "destination": "Italy",
+        "villa": "Villa Tuscany",
+        "arrivalDate": "2025-04-10",
+        "departureDate": "2025-04-17",
+        "memberName": "Sarah Chen",
+        "memberEmail": "sarah.chen@example.com"
+    }
+}
+```
+
+POST: http://localhost:3000/api/proposals
+```
+Body:
+
+{
+   "reservationId": 1,
+   "notes": "Welcome package for James Whitfield",
+   "items": [
+     {
+       "category": "Dining",
+       "title": "Private Chef Dinner",
+       "description": "5-course tasting menu with wine pairing",
+       "scheduledAt": "2025-03-18T19:00:00Z",
+       "price": 850
+     },
+     {
+       "category": "Activities",
+       "title": "Surfing Lesson",
+       "description": "2-hour private lesson at the beach",
+       "scheduledAt": "2025-03-16T10:00:00Z",
+       "price": 250
+     },
+     {
+       "category": "Wellness",
+       "title": "Couples Spa Treatment",
+       "scheduledAt": "2025-03-17T14:00:00Z",
+       "price": 400
+     }
+   ]
+ }
+
+ Response:
+ {
+    "id": 5,
+    "reservationId": 1,
+    "status": "draft",
+    "notes": "Welcome package for James Whitfield",
+    "createdAt": "2026-03-01T18:53:43.572Z",
+    "sentAt": null,
+    "items": [
+        {
+            "id": 11,
+            "proposalId": 5,
+            "category": "Dining",
+            "title": "Private Chef Dinner",
+            "description": "5-course tasting menu with wine pairing",
+            "scheduledAt": "2025-03-18T19:00:00Z",
+            "price": 850
+        },
+        {
+            "id": 12,
+            "proposalId": 5,
+            "category": "Activities",
+            "title": "Surfing Lesson",
+            "description": "2-hour private lesson at the beach",
+            "scheduledAt": "2025-03-16T10:00:00Z",
+            "price": 250
+        },
+        {
+            "id": 13,
+            "proposalId": 5,
+            "category": "Wellness",
+            "title": "Couples Spa Treatment",
+            "description": null,
+            "scheduledAt": "2025-03-17T14:00:00Z",
+            "price": 400
+        }
+    ]
+}
+```
+
+PATCH: http://localhost:3000/api/proposals/5
+```
+Body: 
+
+{
+   "notes": "Updated itinerary per client feedback",
+   "items": [
+     {
+       "category": "Dining",
+       "title": "Beachside Dinner",
+       "description": "Romantic sunset dinner on the beach",
+       "scheduledAt": "2025-03-18T18:30:00Z",
+       "price": 650
+     },
+     {
+       "category": "Excursions",
+       "title": "Whale Watching Tour",
+       "scheduledAt": "2025-03-19T08:00:00Z",
+       "price": 300
+     }
+   ]
+ }
+
+ Response:
+
+ {
+    "id": 5,
+    "reservationId": 1,
+    "status": "draft",
+    "notes": "Updated itinerary per client feedback",
+    "createdAt": "2026-03-01T18:53:43.572Z",
+    "sentAt": null
+}
+
+PATCH: http://localhost:3000/api/proposals/5
+
+Body: {
+   "status": "approved"
+}
+
+Response: {
+    "id": 5,
+    "reservationId": 1,
+    "status": "approved",
+    "notes": "Updated itinerary per client feedback",
+    "createdAt": "2026-03-01T18:53:43.572Z",
+    "sentAt": null
+}
+
+PATCH: http://localhost:3000/api/proposals/5
+
+Body:{
+   "status": "paid"
+}
+
+Response: {
+    "id": 5,
+    "reservationId": 1,
+    "status": "paid",
+    "notes": "Updated itinerary per client feedback",
+    "createdAt": "2026-03-01T18:53:43.572Z",
+    "sentAt": null
+}
+ ```
+POST: http://localhost:3000/api/proposals/6/send
+
+```
+Body: {}
+
+Response : {
+    "id": 6,
+    "reservationId": 1,
+    "status": "sent",
+    "notes": "Welcome package for James Whitfield",
+    "createdAt": "2026-03-01T19:04:05.091Z",
+    "sentAt": "2026-03-01T19:04:12.522Z",
+    "email": {
+        "id": 5,
+        "proposalId": 6,
+        "toEmail": "james.whitfield@example.com",
+        "sentAt": "2026-03-01T19:04:12.522Z",
+        "bodyPreview": "Dear James Whitfield,\n\nYour curated itinerary for Mexico (Villa Punta Mita) is ready for your review.\n\n3 experiences totaling $1,500\n\nView your proposal: /proposal/6\n\nWith warm regards,\nExclusive Resorts Concierge Team"
+    },
+    "message": "Proposal sent to james.whitfield@example.com"
+}
+```

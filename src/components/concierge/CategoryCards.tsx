@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 
 interface CategoryCardsProps {
   selectedCategory: string | null;
-  onSelect: (category: string) => void;
+  onSelect: (category: string | null) => void;
 }
 
 export default function CategoryCards({
@@ -17,7 +17,7 @@ export default function CategoryCards({
       {CATEGORIES.map((cat) => (
         <Card
           key={cat.name}
-          onClick={() => onSelect(cat.name)}
+          onClick={() => onSelect(selectedCategory === cat.name ? null : cat.name)}
           className={`cursor-pointer p-4 text-center transition-all hover:shadow-md hover:scale-[1.02] ${
             selectedCategory === cat.name
               ? "ring-2 ring-slate-900 bg-slate-50"
