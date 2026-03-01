@@ -160,6 +160,22 @@ GET: http://localhost:3000/api/proposals
 ```
 [
     {
+        "id": 6,
+        "reservationId": 1,
+        "status": "sent",
+        "notes": "Welcome package for James Whitfield",
+        "createdAt": "2026-03-01T19:04:05.091Z",
+        "sentAt": "2026-03-01T19:04:12.522Z"
+    },
+    {
+        "id": 5,
+        "reservationId": 1,
+        "status": "paid",
+        "notes": "Updated itinerary per client feedback",
+        "createdAt": "2026-03-01T18:53:43.572Z",
+        "sentAt": null
+    },
+    {
         "id": 4,
         "reservationId": 2,
         "status": "paid",
