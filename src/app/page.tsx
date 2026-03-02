@@ -223,60 +223,100 @@ export default function ConciergeDashboard() {
     if (!reservation || items.length === 0) return;
     setSaving(true);
 
-    // Optimistic update - create a temporary draft proposal
-    const tempId = Date.now();
-    const optimisticProposal: ProposalData = {
-      id: tempId,
-      reservationId: reservation.id,
-      reservation,
-      status: "draft",
-      notes: notes || null,
-      createdAt: new Date().toISOString(),
-      sentAt: null,
-      items: items.map((item, index) => ({
-        id: tempId + index,
-        proposalId: tempId,
-        ...item,
-      })),
-    };
+    // Capture values before clearing the form
+    const capturedItems = [...items];
+    const capturedNotes = notes;
+    const capturedEditingId = editingProposalId;
 
-    // Immediately add to proposals list
-    setProposals(prev => [optimisticProposal, ...prev]);
-    
     // Clear form immediately for instant feedback
     setItems([]);
     setNotes("");
     setSelectedCategory(null);
+    setEditingProposalId(null);
     setSuccessMessage(`Draft saved!`);
 
-    try {
-      const res = await fetch("/api/proposals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reservationId: reservation.id,
-          items,
-          notes: notes || null,
-        }),
-      });
-      const proposal = await res.json();
+    if (capturedEditingId !== null) {
+      // Editing existing draft: update it in-place
+      const originalProposal = proposals.find(p => p.id === capturedEditingId);
+      setProposals(prev =>
+        prev.map(p =>
+          p.id === capturedEditingId
+            ? { ...p, notes: capturedNotes || null, items: capturedItems.map((item, index) => ({ id: capturedEditingId + index, proposalId: capturedEditingId, ...item })) }
+            : p
+        )
+      );
 
-      // Replace optimistic proposal with real one
-      setProposals(prev => prev.map(p => 
-        p.id === tempId ? proposal : p
-      ));
-      
-      setSuccessMessage(`Draft saved! Proposal #${proposal.id}`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (error) {
-      console.error("Error saving draft:", error);
-      // Remove optimistic proposal on error
-      setProposals(prev => prev.filter(p => p.id !== tempId));
-      setSuccessMessage("Failed to save draft. Please try again.");
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } finally {
-      setSaving(false);
+      try {
+        const patchRes = await fetch(`/api/proposals/${capturedEditingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reservationId: reservation.id,
+            items: capturedItems,
+            notes: capturedNotes || null,
+          }),
+        });
+        const updatedProposal = await patchRes.json();
+
+        setProposals(prev => prev.map(p =>
+          p.id === capturedEditingId ? updatedProposal : p
+        ));
+        setSuccessMessage(`Draft updated! Proposal #${updatedProposal.id}`);
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (error) {
+        console.error("Error updating draft:", error);
+        if (originalProposal) {
+          setProposals(prev => prev.map(p => p.id === capturedEditingId ? originalProposal : p));
+        }
+        setSuccessMessage("Failed to update draft. Please try again.");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } else {
+      // New draft: add optimistic entry then reconcile with real data
+      const tempId = Date.now();
+      const optimisticProposal: ProposalData = {
+        id: tempId,
+        reservationId: reservation.id,
+        reservation,
+        status: "draft",
+        notes: capturedNotes || null,
+        createdAt: new Date().toISOString(),
+        sentAt: null,
+        items: capturedItems.map((item, index) => ({
+          id: tempId + index,
+          proposalId: tempId,
+          ...item,
+        })),
+      };
+
+      setProposals(prev => [optimisticProposal, ...prev]);
+
+      try {
+        const res = await fetch("/api/proposals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reservationId: reservation.id,
+            items: capturedItems,
+            notes: capturedNotes || null,
+          }),
+        });
+        const proposal = await res.json();
+
+        setProposals(prev => prev.map(p =>
+          p.id === tempId ? proposal : p
+        ));
+        setSuccessMessage(`Draft saved! Proposal #${proposal.id}`);
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (error) {
+        console.error("Error saving draft:", error);
+        setProposals(prev => prev.filter(p => p.id !== tempId));
+        setSuccessMessage("Failed to save draft. Please try again.");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
     }
+
+    setSaving(false);
   };
 
   const total = items.reduce((sum, item) => sum + item.price, 0);
