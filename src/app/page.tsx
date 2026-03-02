@@ -554,7 +554,7 @@ export default function ConciergeDashboard() {
                     ) : (
                       <FilePlus className="w-4 h-4 mr-2" />
                     )}
-                    Save as Draft
+                    {editingProposalId !== null ? "Update Draft" : "Save as Draft"}
                   </Button>
                 </div>
               </CardContent>
