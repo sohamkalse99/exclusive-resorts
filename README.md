@@ -29,6 +29,10 @@ Unfortunately, Loom only allows you to create 5 minutes videos for free, so I re
 
 https://youtu.be/ttbHp-6Wbos
 
+## Hosted Link
+I have hosted it on railway, but the problem is railway does not support sqlite and sqlite is usually used for local storage, so not an ideal choice for production. So the data can get lost as railway provides like a workspace and if that workspace crashes or is rerendered then all the data may get lost.
+
+https://exclusive-resorts-production.up.railway.app/
 ## How It Works
 
 ### Concierge Dashboard (`/`)
