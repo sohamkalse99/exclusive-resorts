@@ -24,6 +24,11 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) — the **Concierge Dashboard**.
 
+## Demo Video Link
+Unfortunately, Loom only allows you to create 5 minutes videos for free, so I recorded it on zoom and then uploaded it to YouTube.
+
+https://youtu.be/ttbHp-6Wbos
+
 ## How It Works
 
 ### Concierge Dashboard (`/`)
@@ -79,20 +84,23 @@ Open [http://localhost:3000](http://localhost:3000) — the **Concierge Dashboar
 
 ## What I Would Improve Given More Time
 
-- **Authentication**: Add concierge login and member auth via magic links
-- **Real email integration** (SendGrid, Resend, etc.)
-- **Image uploads** for experiences (hero images per category)
-- **E2E tests** with Playwright for the full create → send → approve → pay flow
-- **Rich text editor** for proposal notes with formatting options
-- **Activity provider integration** for real-time pricing and availability
-- **Multi-language support** for international members
-- **Proposal templates** to quickly create common itinerary patterns
-- **Offline support** with service workers for reliability
-- **Advanced analytics** to track proposal conversion rates
+1. Authentication  
+   - Two different login/registration pages for concierge and our members
+   - Use JWT/Okta auth
+2. For production deployment
+   - PostgreSQL
+   - CI/CD pipelineing
+3. Integration Tests
+4. Real Email Integration
+   - SendGrid
+5. Real Payment Integration
+   - Stripe
 
 ## What I Found Most Interesting
 
-The dual UX challenge was the most compelling part — designing an efficient, no-nonsense dashboard for the concierge (who moves fast all day) versus a premium, luxury-feeling experience for the member (who should feel pampered just looking at it). The constraint of using only Tailwind made this an exercise in how much visual personality you can create with utility classes alone — the dark gradients, amber accents, and generous whitespace on the member side vs. the tight, card-based layout on the concierge side.
+The dual UX challenge was the most compelling part — designing an efficient, dashboard for the concierge (who moves fast all day) versus a premium, luxury-feeling experience for the member. The constraint of using only Tailwind made this an exercise in how much visual personality you can create with utility classes alone — the dark gradients, amber accents on the member side vs. the tight, card-based layout on the concierge side.
+
+Using SQLite along with Drizzle ORM was a great choice for this project — it's simple to set up and perfect for local development, making it easy to get started quickly.
 
 ## Project Structure
 
