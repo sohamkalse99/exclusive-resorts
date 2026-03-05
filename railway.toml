@@ -3,6 +3,6 @@ builder = "nixpacks"
 buildCommand = "npm run build"
 
 [deploy]
-startCommand = "npm run start:prod"
+startCommand = "NEXT_TELEMETRY_DISABLED=1 npm run start:prod"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
